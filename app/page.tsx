@@ -3,7 +3,7 @@ import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
 import { lusitana } from '@/app/ui/fonts';
-// Image组件，自动图片优化：图片加载时避免布局移动（添加width,height）、懒加载、图片大小根据设备自适应
+// Image组件，自动图片优化：1.图片加载时避免布局移动（添加width,height），2.懒加载，3.图片大小根据设备自适应
 import Image from 'next/image';
 
 // css module
