@@ -4,8 +4,9 @@
 import { UserGroupIcon, HomeIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 
 // Link component allows you to do client-side navigation with JavaScript.
-// no a full page refresh
-// Next.js会自动根据路由拆分代码；并在生产环境会预加载prefetch代码
+// not a full page refresh
+// Next.js会自动根据路由拆分代码；
+// 在生产环境会预加载prefetch the code for the linked route in the background
 import Link from 'next/link';
 
 import { usePathname } from 'next/navigation';
