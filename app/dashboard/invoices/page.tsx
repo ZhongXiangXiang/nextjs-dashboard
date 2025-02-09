@@ -7,6 +7,7 @@ import { InvoicesTableSkeleton } from '@/app/ui/skeletons';
 import { Suspense } from 'react';
 import { fetchInvoicesPages } from '@/app/lib/data';
 
+// searchParams，获取Url上的查询字符串
 export default async function Page(props: {
   searchParams?: Promise<{
     query?: string;
