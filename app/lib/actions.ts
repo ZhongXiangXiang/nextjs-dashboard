@@ -12,21 +12,48 @@ import { redirect } from 'next/navigation';
 
 const FormSchema = z.object({
   id: z.string(),
-  customerId: z.string(),
-  amount: z.coerce.number(),
-  status: z.enum(['pending', 'paid']),
+  customerId: z.string({
+    invalid_type_error: 'Please select a customer.',
+  }),
+  amount: z.coerce.number().gt(0, { message: 'Please enter an amount greater than $0.' }),
+  status: z.enum(['pending', 'paid'], {
+    invalid_type_error: 'Please select an invoice status.',
+  }),
   date: z.string(),
 });
 
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 
-export async function createInvoice(formData: FormData) {
-  const { customerId, amount, status } = CreateInvoice.parse({
+export type State = {
+  errors?: {
+    customerId?: string[];
+    amount?: string[];
+    status?: string[];
+  };
+  message?: string | null;
+};
+
+export async function createInvoice(preState: State, formData: FormData) {
+  // Validate form fields using Zod
+  // safeParse() will return an object containing either a success or error field
+  const validatedFields = CreateInvoice.safeParse({
     customerId: formData.get('customerId'),
     amount: formData.get('amount'), // 会被转换为number，并校验类型
     status: formData.get('status'),
   });
-  console.log(customerId, amount, status); // 在终端中打印（服务端）
+  console.log('validatedFields', validatedFields);
+  // console.log(customerId, amount, status); // 在终端中打印（服务端）
+
+  // If form validation fails, return errors early. Otherwise, continue.
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Invoice.',
+    };
+  }
+
+  // Prepare data for insertion into the database
+  const { customerId, amount, status } = validatedFields.data;
   const amountInCents = amount * 100;
   const date = new Date().toISOString().split('T')[0];
 
@@ -37,6 +64,10 @@ export async function createInvoice(formData: FormData) {
     `;
   } catch (error) {
     console.log('create invoice error', error);
+    // If a database error occurs, return a more specific error.
+    return {
+      message: 'Database Error: Failed to Create Invoice.',
+    };
   }
 
   revalidatePath('/dashboard/invoices'); // 清除浏览器路由缓存，重新向服务器发起请求获取最新数据
@@ -44,13 +75,23 @@ export async function createInvoice(formData: FormData) {
 }
 
 const UpdateInvoice = FormSchema.omit({ id: true, date: true });
-export async function updateInvoice(id: string, formData: FormData) {
-  const { customerId, amount, status } = UpdateInvoice.parse({
+export async function updateInvoice(id: string, preState: State, formData: FormData) {
+  const validatedFields = UpdateInvoice.safeParse({
     customerId: formData.get('customerId'),
     amount: formData.get('amount'), // 会被转换为number，并校验类型
     status: formData.get('status'),
   });
+  console.log('validatedFields', validatedFields);
 
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Update Invoice.',
+    };
+  }
+
+  // Prepare data for insertion into the database
+  const { customerId, amount, status } = validatedFields.data;
   const amountInCents = amount * 100;
 
   try {
@@ -61,6 +102,9 @@ export async function updateInvoice(id: string, formData: FormData) {
     `;
   } catch (error) {
     console.log('update invoice error', error);
+    return {
+      message: 'Database Error: Failed to Update Invoice.',
+    };
   }
 
   revalidatePath('/dashboard/invoices'); // to clear the client cache and make a new server request
